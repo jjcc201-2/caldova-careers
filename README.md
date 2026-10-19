@@ -68,7 +68,7 @@ This repository is a GitHub template. When you create a new repository from it, 
 
 The workflow only runs on repositories created from the template (the `if: ${{ !github.event.repository.is_template }}` guard skips the template itself), and after creating the issues it removes itself and the `.github/bootstrap-issues/` folder in a cleanup commit so it never runs again.
 
-The starter intentionally leaves location labels off role cards while retaining location data and detail-page labels for the workshop warm-up. The **Filter roles by department and location** issue (`workshop:filtering`) starts the longer feature exercise. Filtering, the TSDoc instruction addition, the `quality-checks` skill's results formatting, and `.github/agents/qa.agent.md` are left for learners to implement.
+Role cards show location labels from the existing job data alongside the other role labels, completing the workshop warm-up. Location also remains visible on detail pages. The **Filter roles by department and location** issue (`workshop:filtering`) starts the longer feature exercise. Filtering, the TSDoc instruction addition, the `quality-checks` skill's results formatting, and `.github/agents/qa.agent.md` are left for learners to implement.
 
 The only bundled skill is `.github/skills/quality-checks/SKILL.md`. The starter includes no custom agents or MCP server configuration: learners configure Playwright MCP in Copilot CLI and create the QA agent during the workshop. GitHub MCP is built into Copilot CLI and needs no repository server configuration.
 
