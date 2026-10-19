@@ -1,0 +1,161 @@
+---
+import RoleCard from './RoleCard.astro';
+import EmptyState from './EmptyState.astro';
+import { getDepartments, getLocations } from '../lib/jobs';
+import type { Job } from '../types/job';
+
+/** Page-supplied data for a prerendered, progressively enhanced role listing. */
+interface Props {
+  /** Unique identifier used to associate this listing's labels and controls. */
+  id: string;
+  /** Roles in their display order, already loaded by the page. */
+  jobs: Job[];
+}
+
+const { id, jobs } = Astro.props;
+const departments = getDepartments(jobs);
+const locations = getLocations(jobs);
+---
+
+<div class="role-listing" data-role-listing data-jobs={JSON.stringify(jobs)}>
+  {jobs.length === 0 ? (
+    <EmptyState text="There are no open roles right now. Check back soon." />
+  ) : (
+    <>
+      <fieldset
+        hidden
+        disabled
+        class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end"
+        data-role-filters
+      >
+        <legend class="sr-only">Filter open roles</legend>
+        <div class="flex-1">
+          <label for={`${id}-department`} class="mb-2 block text-sm font-medium text-slate-200">
+            Department
+          </label>
+          <select
+            id={`${id}-department`}
+            class="w-full rounded-lg border border-slate-700 bg-slate-900 p-3 text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            data-testid="department-filter"
+          >
+            <option value="">All departments</option>
+            {departments.map((department) => <option value={department}>{department}</option>)}
+          </select>
+        </div>
+        <div class="flex-1">
+          <label for={`${id}-location`} class="mb-2 block text-sm font-medium text-slate-200">
+            Location
+          </label>
+          <select
+            id={`${id}-location`}
+            class="w-full rounded-lg border border-slate-700 bg-slate-900 p-3 text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            data-testid="location-filter"
+          >
+            <option value="">All locations</option>
+            {locations.map((location) => <option value={location}>{location}</option>)}
+          </select>
+        </div>
+        <button
+          type="button"
+          class="rounded-lg bg-blue-700 px-6 py-3 font-medium text-white transition-colors hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          data-testid="reset-filters"
+        >
+          Reset filters
+        </button>
+      </fieldset>
+
+      <p role="status" aria-live="polite" aria-atomic="true" class="mb-4 text-sm text-slate-400" data-testid="roles-count">
+        {jobs.length} {jobs.length === 1 ? 'role' : 'roles'} shown
+      </p>
+      <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3" data-testid="roles-grid">
+        {jobs.map((job) => <RoleCard job={job} />)}
+      </div>
+      <div hidden data-testid="filtered-empty-state">
+        <EmptyState text="No roles match these filters. Try another department or location, or reset the filters." />
+      </div>
+    </>
+  )}
+</div>
+
+<script>
+  import { filterJobs } from '../lib/jobs';
+  import type { Job } from '../types/job';
+
+  for (const listing of document.querySelectorAll<HTMLElement>('[data-role-listing]')) {
+    const serializedJobs = listing.dataset.jobs;
+    if (!serializedJobs) {
+      throw new Error('Role listing is missing its job data.');
+    }
+    const jobs: Job[] = JSON.parse(serializedJobs);
+    if (jobs.length === 0) {
+      continue;
+    }
+
+    const controls = listing.querySelector<HTMLFieldSetElement>('[data-role-filters]');
+    const department = listing.querySelector<HTMLSelectElement>('[data-testid="department-filter"]');
+    const location = listing.querySelector<HTMLSelectElement>('[data-testid="location-filter"]');
+    const reset = listing.querySelector<HTMLButtonElement>('[data-testid="reset-filters"]');
+    const count = listing.querySelector<HTMLElement>('[data-testid="roles-count"]');
+    const grid = listing.querySelector<HTMLElement>('[data-testid="roles-grid"]');
+    const emptyState = listing.querySelector<HTMLElement>('[data-testid="filtered-empty-state"]');
+    const cards = listing.querySelectorAll<HTMLAnchorElement>('[data-testid="role-card"]');
+
+    if (!controls || !department || !location || !reset || !count || !grid || !emptyState) {
+      throw new Error('Role listing is missing its filtering controls or result elements.');
+    }
+
+    /**
+     * Applies the current selections to the complete collection and updates existing cards.
+     *
+     * @remarks
+     * Hidden cards leave the layout and accessibility tree. The result status and
+     * no-match message update without rebuilding cards or moving keyboard focus.
+     *
+     * @throws Error when a rendered card is missing its content-entry identifier.
+     */
+    const updateResults = (): void => {
+      const matches = filterJobs(jobs, {
+        department: department.value,
+        location: location.value,
+      });
+      const matchingSlugs = new Set(matches.map((job) => job.slug));
+      for (const card of cards) {
+        const slug = card.dataset.jobId;
+        if (!slug) {
+          throw new Error('Role card is missing its job identifier.');
+        }
+        card.hidden = !matchingSlugs.has(slug);
+      }
+      grid.hidden = matches.length === 0;
+      emptyState.hidden = matches.length !== 0;
+      count.textContent = `${matches.length} ${matches.length === 1 ? 'role' : 'roles'} shown`;
+    };
+
+    /**
+     * Clears both selections and restores the original display order.
+     *
+     * @remarks
+     * Also runs on initialization and page restoration so browser-restored control
+     * values cannot leave the selections and rendered results out of sync.
+     */
+    const resetFilters = (): void => {
+      department.value = '';
+      location.value = '';
+      updateResults();
+    };
+
+    department.addEventListener('change', updateResults);
+    location.addEventListener('change', updateResults);
+    reset.addEventListener('click', resetFilters);
+    window.addEventListener('pageshow', resetFilters);
+    resetFilters();
+    controls.disabled = false;
+    controls.hidden = false;
+  }
+</script>
+
+<style>
+  .role-listing :global([hidden]) {
+    display: none !important;
+  }
+</style>

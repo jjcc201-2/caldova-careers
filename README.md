@@ -43,7 +43,7 @@ npm run dev
 
 - `src/content/jobs/` — job postings (Markdown + frontmatter)
 - `src/content.config.ts` — content collection schema
-- `src/lib/jobs.ts` — pure helpers over `Job[]` (sorting, formatting)
+- `src/lib/jobs.ts` — pure helpers over `Job[]` (sorting, formatting, filtering, and filter options)
 - `src/lib/applications.ts` — application validation schema + insert helper
 - `src/lib/db.ts` — Drizzle/libSQL client for the `applications` table
 - `src/pages/` — `index.astro` (listing), `roles/[slug].astro` (detail + apply form), `api/apply.ts` (on-demand endpoint), `thanks.astro`, `about.astro`, `404.astro`
@@ -68,7 +68,9 @@ This repository is a GitHub template. When you create a new repository from it, 
 
 The workflow only runs on repositories created from the template (the `if: ${{ !github.event.repository.is_template }}` guard skips the template itself), and after creating the issues it removes itself and the `.github/bootstrap-issues/` folder in a cleanup commit so it never runs again.
 
-Role cards show location labels from the existing job data alongside the other role labels, completing the workshop warm-up. Location also remains visible on detail pages. The **Filter roles by department and location** issue (`workshop:filtering`) starts the longer feature exercise. Filtering, the TSDoc instruction addition, the `quality-checks` skill's results formatting, and `.github/agents/qa.agent.md` are left for learners to implement.
+Role cards show location labels from the existing job data alongside the other role labels, completing the workshop warm-up. Location also remains visible on detail pages. The home page now includes department and location filters using values from the postings. Each single-select filter works independently; when both are selected, roles must match both. Results update immediately, and **Reset filters** restores all roles. Options stay available even when a combination has no matches. Selections reset on reload and are not stored in the URL; without JavaScript, all roles remain browsable.
+
+The **Filter roles by department and location** issue (`workshop:filtering`) is implemented. The repository guidance now requires TSDoc comments for new TypeScript, and the filtering code documents its contracts and browser behavior. The `quality-checks` skill's results formatting and `.github/agents/qa.agent.md` remain learner exercises.
 
 The only bundled skill is `.github/skills/quality-checks/SKILL.md`. The starter includes no custom agents or MCP server configuration: learners configure Playwright MCP in Copilot CLI and create the QA agent during the workshop. GitHub MCP is built into Copilot CLI and needs no repository server configuration.
 
